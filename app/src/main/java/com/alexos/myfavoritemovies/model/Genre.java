@@ -2,6 +2,7 @@ package com.alexos.myfavoritemovies.model;
 
 import androidx.databinding.BaseObservable;
 import androidx.databinding.Bindable;
+
 import androidx.databinding.library.baseAdapters.BR;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
@@ -44,5 +45,10 @@ public class Genre extends BaseObservable {
     public void setGenreName(String genreName) {
         this.genreName = genreName;
         notifyPropertyChanged(BR.genreName);
+    }
+
+    @Override
+    public String toString() {
+        return this.genreName;
     }
 }
