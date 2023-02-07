@@ -25,5 +25,5 @@ public interface MovieDao {
     LiveData<List<Movie>> getAllMovies();
 
     @Query("SELECT * FROM movies_table WHERE genre_id==:genreId")
-    LiveData<List<Movie>> getAGenreMovies(int genreId);
+    LiveData<List<Movie>> getGenreMovies(int genreId);
 }
