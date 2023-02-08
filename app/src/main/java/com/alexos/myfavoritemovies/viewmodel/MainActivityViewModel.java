@@ -42,13 +42,13 @@ public class MainActivityViewModel extends AndroidViewModel {
 
     }
 
-    public void updateNewMovie(Movie movie) {
+    public void updateMovie(Movie movie) {
 
         appRepository.updateMovie(movie);
 
     }
 
-    public void deleteNewMovie(Movie movie) {
+    public void deleteMovie(Movie movie) {
 
         appRepository.deleteMovie(movie);
 

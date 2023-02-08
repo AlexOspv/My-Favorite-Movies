@@ -1,19 +1,25 @@
 package com.alexos.myfavoritemovies;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.alexos.myfavoritemovies.databinding.ActivityMainBinding;
 import com.alexos.myfavoritemovies.model.Genre;
 import com.alexos.myfavoritemovies.model.Movie;
 import com.alexos.myfavoritemovies.viewmodel.MainActivityViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,7 +29,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +43,10 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Movie> movieArrayList;
     private RecyclerView recyclerView;
     private MovieAdapter movieAdapter;
+    private int selectedMovieId;
+
+//    public static final int ADD_MOVIE_REQUEST_CODE = 111;
+//    public static final int EDIT_MOVIE_REQUEST_CODE = 222;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
 //                        .setAction("Action", null).show();
 //            }
 //        });
+
     }
 
     private void showInSpinner() {
@@ -117,7 +127,10 @@ public class MainActivity extends AppCompatActivity {
 
         public void onFabClicked(View view) {
 
-            Toast.makeText(MainActivity.this, "Button is clicked", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(MainActivity.this, "Button is clicked", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, AddEditActivity.class);
+//            startActivityForResult(intent, ADD_MOVIE_REQUEST_CODE);
+            AddActivityResultLauncher.launch(intent);
 
         }
 
@@ -126,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             selectedGenre = (Genre) parent.getItemAtPosition(position);
             String message = "id is " + selectedGenre.getId() +
                     "\n name is " + selectedGenre.getGenreName();
-            Toast.makeText(parent.getContext(), message, Toast.LENGTH_SHORT).show();
+
 
             loadGenreMoviesInArrayList(selectedGenre.getId());
         }
@@ -156,8 +169,77 @@ public class MainActivity extends AppCompatActivity {
         movieAdapter.setMovieArrayList(movieArrayList);
         recyclerView.setAdapter(movieAdapter);
 
+        movieAdapter.setOnItemClickListener(new MovieAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Movie movie) {
+                selectedMovieId = movie.getMovieId();
+                Intent intent = new Intent(MainActivity.this, AddEditActivity.class);
+                intent.putExtra(AddEditActivity.MOVIE_ID, selectedMovieId);
+                intent.putExtra(AddEditActivity.MOVIE_NAME, movie.getMovieName());
+                intent.putExtra(AddEditActivity.MOVIE_DESCRIPTION, movie.getMovieDescription());
+                EditActivityResultLauncher.launch(intent);
+            }
+        });
 
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+
+                Movie movieToDelete = movieArrayList.get(viewHolder.getAdapterPosition());
+                mainActivityViewModel.deleteMovie(movieToDelete);
+
+            }
+        }).attachToRecyclerView(recyclerView);
     }
 
+    ActivityResultLauncher<Intent> AddActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+
+                    int selectedGenreId = selectedGenre.getId();
+
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        Movie movie = new Movie();
+                        movie.setGenreId(selectedGenreId);
+                        movie.setMovieName(data.getStringExtra(AddEditActivity.MOVIE_NAME));
+                        movie.setMovieDescription(data.getStringExtra(AddEditActivity.MOVIE_DESCRIPTION));
+
+                        mainActivityViewModel.addNewMovie(movie);
+
+                    }
+                }
+            });
+
+
+    ActivityResultLauncher<Intent> EditActivityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+
+                    int selectedGenreId = selectedGenre.getId();
+
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data = result.getData();
+                        Movie movie = new Movie();
+                        movie.setMovieId(selectedMovieId);
+                        movie.setGenreId(selectedGenreId);
+                        movie.setMovieName(data.getStringExtra(AddEditActivity.MOVIE_NAME));
+                        movie.setMovieDescription(data.getStringExtra(AddEditActivity.MOVIE_DESCRIPTION));
+
+                        mainActivityViewModel.updateMovie(movie);
+                    }
+                }
+            });
 
 }
